@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>{% block title %}Bookr{% endblock %}</title>
+  </head>
+  <body>
+    <h1>Welcome to Bookr</h1>
+  </body>
+</html>
+<form class="form-inline" action="{% url 'book_search' %}" method="get">
+  <input
+    class="form-control mr-sm-2"
+    type="search"
+    name="search"
+    value="{{ search_text }}"
+    s
+    placeholder="Search"
+    aria-label="Search"
+    minlength="3"
+  />
+  <button type="submit">Search</button>
+</form>

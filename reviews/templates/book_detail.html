@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bookr</title>
+</head>
+<body>
+    <h1>Welcome to Bookr</h1>
+    {% extends "base.html" %}
+
+{% block title %}Book Details - {{ book.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Book Details</h2>
+    <ul class="list-group mb-4">
+        <li class="list-group-item"><strong>Title:</strong> {{ book.title }}</li>
+        <li class="list-group-item"><strong>Publisher:</strong> {{ book.publisher.name }}</li>
+        <li class="list-group-item"><strong>Publication Date:</strong> {{ book.publication_date|date:"M. d, Y" }}</li>
+        <li class="list-group-item"><strong>Overall Rating:</strong> {{ overall_rating|default:"No rating yet" }}</li>
+    </ul>
+
+    <h3>Review Comments</h3>
+    {% if reviews %}
+        {% for review in reviews %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <p class="card-text"><strong>Review comment:</strong> {{ review.content }}</p>
+                    <p class="text-muted small mb-1">
+                        Created on: {{ review.created_at|date:"M. j, Y, g:i a" }}
+                        {% if review.updated_at %}
+                            <br>Modified on: {{ review.updated_at|date:"M. j, Y, g:i a" }}
+                        {% endif %}
+                    </p>
+                    <p class="card-text mb-1"><strong>Rating:</strong> {{ review.rating }}</p>
+                    <p class="card-text"><strong>Creator:</strong> {{ review.creator.email }}</p>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No reviews available for this book.</p>
+    {% endif %}
+
+    <a href="{% url 'book_list' %}" class="btn btn-secondary mt-3">Back to Book List</a>
+</div>
+{% endblock %}
+</body>
+</html>
+
