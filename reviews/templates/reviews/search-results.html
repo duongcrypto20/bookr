@@ -1,41 +1,38 @@
 {% extends "base.html" %}
 
 {% block title %}
-    {% if form.is_valid and search_text %}
-        Search Results for "{{ search_text }}"
-    {% else %}
-        Book Search
-    {% endif %}
+  {% if form.is_valid and search_text %}
+    Search Results for "{{ search_text }}"
+  {% else %}
+    Book Search
+  {% endif %}
 {% endblock %}
 
 {% block content %}
 <h2>Search for Books</h2>
 
 <form action="{% url 'book_search' %}" method="get">
-    {{ form.as_p }}
-    <button type="submit" class="btn btn-primary">Search</button>
+  {{ form.as_p }}
+  <button type="submit" class="btn btn-primary">Search</button>
 </form>
 
 {% if form.is_valid and search_text %}
-    <h3>Search Results for <em>{{ search_text }}</em></h3>
-{% endif %}
+<h3>Search Results for <em>{{ search_text }}</em></h3>
 
-<ul class="list-group mt-3">
-    {% for book in books %}
-        <li class="list-group-item">
-            <a href="{% url 'book_detail' book.pk %}">{{ book.title }}</a> 
-            ({{ book.isbn }})
-            <br>
-            <small class="text-muted">Contributors: 
-                {% for c in book.contributors.all %}
-                    {{ c.first_names }} {{ c.last_names }}{% if not forloop.last %}, {% endif %}
-                {% endfor %}
-            </small>
-        </li>
-    {% empty %}
-        {% if search_text %}
-            <li class="list-group-item">No results found.</li>
-        {% endif %}
+<ul class="list-group">
+  {% for book in books %}
+  <li class="list-group-item">
+    <span class="text-info">Title: </span>
+    <a href="{% url 'book_detail' book.pk %}">{{ book.title }} ({{ book.isbn }})</a>
+    <br />
+    <span class="text-info">Contributors: </span>
+    {% for contributor in book.contributors.all %}
+      {{ contributor.first_names }} {{ contributor.last_names }}{% if not forloop.last %}, {% endif %}
     {% endfor %}
+  </li>
+  {% empty %}
+  <li class="list-group-item">No results found.</li>
+  {% endfor %}
 </ul>
+{% endif %}
 {% endblock %}

@@ -1,14 +1,11 @@
-from django.shortcuts import render, get_object_or_404
-from .models import Book
-from django.shortcuts import render
-from .utils import average_rating
-from .forms import PublisherForm, SearchForm
-from django.shortcuts import render, get_object_or_404, redirect
-from .models import Book, Contributor, Publisher
 from django.contrib import messages
-from django.shortcuts import get_object_or_404, render
 from django.db.models import Avg
-from .models import Book
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+
+from .forms import PublisherForm, ReviewForm, SearchForm
+from .models import Book, Contributor, Publisher, Review
+from .utils import average_rating
 
 #view hiển thị trang chủ
 def index(request):
@@ -92,7 +89,50 @@ def publisher_edit(request, pk=None):
             return redirect("publisher_edit", updated_publisher.pk)
     else:
         form = PublisherForm(instance=publisher)
-    return render(request, "form-example.html", {"method":  request.method, "form": form})
+    return render(request, "instance-form.html", {
+        "form": form,
+        "instance": publisher,
+        "model_type": "Publisher",
+    })
+
+
+#tạo mới hoặc chỉnh sửa review của một cuốn sách
+def review_edit(request, book_pk, review_pk=None):
+    book = get_object_or_404(Book, pk=book_pk)
+
+    if review_pk is not None:
+        # đảm bảo review thuộc về cuốn sách này
+        review = get_object_or_404(Review, book_id=book_pk, pk=review_pk)
+    else:
+        review = None
+
+    if request.method == "POST":
+        form = ReviewForm(request.POST, instance=review)
+        if form.is_valid():
+            updated_review = form.save(commit=False)
+            updated_review.book = book
+
+            if review is not None:
+                updated_review.date_edited = timezone.now()
+
+            updated_review.save()
+
+            if review is None:
+                messages.success(request, 'Review for "{}" created.'.format(book))
+            else:
+                messages.success(request, 'Review for "{}" updated.'.format(book))
+
+            return redirect("book_detail", book.pk)
+    else:
+        form = ReviewForm(instance=review)
+
+    return render(request, "instance-form.html", {
+        "form": form,
+        "instance": review,
+        "model_type": "Review",
+        "related_instance": book,
+        "related_model_type": "Book",
+    })
 
 #view hiển thị chi tiết của một cuốn sách
 def book_detail(request, book_id):
