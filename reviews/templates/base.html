@@ -16,6 +16,20 @@
         <li class="nav-item">
           <a class="nav-link" href="{% url 'welcome_view' %}">Home</a>
         </li>
+        {# (Ch.7 - Bài IV) Hiện Logout nếu đã đăng nhập, ngược lại hiện Login #}
+        {% if user.is_authenticated %}
+        <li class="nav-item">
+          {# Từ Django 5.0, đăng xuất bắt buộc dùng POST nên Logout là form có nút trông như liên kết #}
+          <form method="post" action="{% url 'accounts:logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="nav-link" style="background: none; border: 0; cursor: pointer;">Logout</button>
+          </form>
+        </li>
+        {% else %}
+        <li class="nav-item">
+          <a class="nav-link" href="/accounts/login">Login</a>
+        </li>
+        {% endif %}
       </ul>
       <form class="form-inline" action="{% url 'book_search' %}" method="get">
         <input
@@ -30,6 +44,10 @@
         <input type="hidden" name="search_in" value="title" />
         <button class="btn btn-outline-success" type="submit">Search</button>
       </form>
+      {# (Ch.7 - Bài VI, Hình VI-1) Hiện tên người dùng đang đăng nhập ở góc phải thanh điều hướng #}
+      {% if user.is_authenticated %}
+      <span class="navbar-text text-primary ml-3">User: {{ user.username }}</span>
+      {% endif %}
     </nav>
 
     <div class="container-fluid">

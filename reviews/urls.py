@@ -11,5 +11,7 @@ urlpatterns = [
     path('books/<int:book_id>/', views.book_detail, name='book_detail'),
     path("books/<int:book_pk>/reviews/new/", views.review_edit, name="review_create"),
     path("books/<int:book_pk>/reviews/<int:review_pk>/", views.review_edit, name="review_edit"),
+    # (BT Chương 6 - Bài 1, bước 10) Trang tải ảnh bìa / nội dung mẫu: /books/<pk>/media/
+    path("books/<int:pk>/media/", views.book_media, name="book_media"),
     #path("publishers/new/", views.publisher_edit, name="publisher_create"),
 ]

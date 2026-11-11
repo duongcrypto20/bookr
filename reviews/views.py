@@ -1,9 +1,16 @@
+from io import BytesIO                                   # Bộ đệm trong bộ nhớ, dùng khi thu nhỏ ảnh bìa
+from PIL import Image                                    # Pillow: mở và thu nhỏ hình ảnh
+
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required, user_passes_test
+# (Ch.7 - Bài III) login_required: bắt buộc đăng nhập; user_passes_test: kiểm tra người dùng bằng hàm tự viết
+from django.core.exceptions import PermissionDenied      # Gây lỗi 403 Forbidden
+from django.core.files.images import ImageFile           # Bọc dữ liệu ảnh để lưu vào ImageField
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from .forms import PublisherForm, ReviewForm, SearchForm
+from .forms import BookMediaForm, PublisherForm, ReviewForm, SearchForm
 from .models import Book, Contributor, Publisher, Review
 from .utils import average_rating
 
@@ -71,6 +78,15 @@ def book_search(request):
     }
     return render(request, "reviews/search-results.html", context)
 
+# (Ch.7 - Bài III, bước 2) Hàm kiểm tra: chỉ nhân viên (is_staff) mới đạt
+def is_staff_user(user):
+    return user.is_staff
+
+
+# (Ch.7 - Bài III) Chỉ nhân viên mới được tạo/sửa nhà xuất bản.
+# Người chưa đạt điều kiện sẽ bị chuyển tới trang đăng nhập.
+# Cách 1 (thay thế, dùng quyền): @permission_required('edit_publisher')
+@user_passes_test(is_staff_user)
 #sửa publisher thông tin nhà xuất bản
 def publisher_edit(request, pk=None):
     if pk is not None:
@@ -96,6 +112,8 @@ def publisher_edit(request, pk=None):
     })
 
 
+# (Ch.7 - Bài III, bước 3) Bắt buộc đăng nhập mới được tạo/sửa review
+@login_required
 #tạo mới hoặc chỉnh sửa review của một cuốn sách
 def review_edit(request, book_pk, review_pk=None):
     book = get_object_or_404(Book, pk=book_pk)
@@ -103,6 +121,11 @@ def review_edit(request, book_pk, review_pk=None):
     if review_pk is not None:
         # đảm bảo review thuộc về cuốn sách này
         review = get_object_or_404(Review, book_id=book_pk, pk=review_pk)
+        # (Ch.7 - Bài III, bước 4) Chỉ nhân viên hoặc chính người viết review mới được sửa;
+        # ngược lại báo lỗi 403 Forbidden
+        user = request.user
+        if not user.is_staff and review.creator.id != user.id:
+            raise PermissionDenied
     else:
         review = None
 
@@ -134,6 +157,43 @@ def review_edit(request, book_pk, review_pk=None):
         "related_model_type": "Book",
     })
 
+# (Bài tập Chương 6 - Bài 1) Thêm/đổi ảnh bìa và tập tin nội dung mẫu cho một cuốn sách ĐÃ CÓ
+# (không tạo sách mới nên bắt buộc có tham số pk). Yêu cầu đăng nhập (Ch.7 - Bài III, bước 3).
+@login_required
+def book_media(request, pk):
+    book = get_object_or_404(Book, pk=pk)
+
+    if request.method == "POST":
+        # request.FILES chứa các tập tin tải lên; instance=book để cập nhật sách hiện có
+        form = BookMediaForm(request.POST, request.FILES, instance=book)
+        if form.is_valid():
+            # commit=False: chưa lưu ngay vì còn phải thu nhỏ ảnh bìa
+            book = form.save(False)
+            cover = form.cleaned_data.get("cover")
+            # Chỉ xử lý ảnh khi người dùng vừa chọn một ảnh MỚI ("cover" nằm trong changed_data).
+            # Nếu để trống, hoặc ảnh đã có sẵn từ trước, thì không thu nhỏ lại.
+            if cover and "cover" in form.changed_data:
+                image = Image.open(cover)
+                image.thumbnail((300, 300))          # Thu nhỏ, giữ tỉ lệ, tối đa 300 x 300 pixel
+                image_data = BytesIO()               # Ghi ảnh đã thu nhỏ vào bộ nhớ
+                image.save(fp=image_data, format=image.format)
+                image_file = ImageFile(image_data)
+                book.cover.save(cover.name, image_file)   # Lưu ảnh đã thu nhỏ vào media/book_covers/
+            book.save()                              # Lưu các thay đổi (kể cả tập tin sample) vào CSDL
+            messages.success(request, 'Book "{}" was successfully updated.'.format(book))
+            return redirect("book_detail", book.pk)
+    else:
+        # Mở trang lần đầu: form điền sẵn các tập tin hiện có của cuốn sách
+        form = BookMediaForm(instance=book)
+
+    return render(request, "instance-form.html", {
+        "form": form,
+        "instance": book,
+        "model_type": "Book",
+        "is_file_upload": True,      # Để instance-form.html thêm enctype="multipart/form-data"
+    })
+
+
 #view hiển thị chi tiết của một cuốn sách
 def book_detail(request, book_id):
     book = get_object_or_404(Book, pk=book_id)
@@ -145,4 +205,18 @@ def book_detail(request, book_id):
         'reviews': reviews,
         'overall_rating': round(overall_rating, 1) if overall_rating else None
     }
+
+    # (Ch.7 - Bài VI) Chỉ lưu lịch sử xem sách cho người dùng ĐÃ đăng nhập
+    if request.user.is_authenticated:
+        max_viewed_books_length = 10    # Tối đa 10 cuốn sách xem gần nhất
+        # Lấy danh sách đã lưu trong session; chưa có thì dùng danh sách rỗng
+        viewed_books = request.session.get('viewed_books', [])
+        viewed_book = [book.id, book.title]
+        # Nếu sách đã có trong danh sách thì bỏ ra để đưa lên đầu (tránh trùng lặp)
+        if viewed_book in viewed_books:
+            viewed_books.pop(viewed_books.index(viewed_book))
+        viewed_books.insert(0, viewed_book)                      # Sách vừa xem nằm đầu danh sách
+        viewed_books = viewed_books[:max_viewed_books_length]    # Chỉ giữ 10 cuốn đầu tiên
+        request.session['viewed_books'] = viewed_books           # Ghi lại vào session cho các request sau
+
     return render(request, 'book_detail.html', context)

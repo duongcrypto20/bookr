@@ -17,7 +17,8 @@
 <p>For {{ related_model_type }} <em>{{ related_instance }}</em></p>
 {% endif %}
 
-<form method="post">
+{# (BT Chương 6 - Bài 1, bước 9) Chỉ thêm enctype multipart/form-data khi form có ô chọn tập tin (is_file_upload=True) #}
+<form method="post" {% if is_file_upload %}enctype="multipart/form-data"{% endif %}>
   {% csrf_token %}
   {{ form.as_p }}
   <button type="submit" class="btn btn-primary">

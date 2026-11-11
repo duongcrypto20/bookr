@@ -1,5 +1,5 @@
 from django import forms
-from .models import Publisher, Review
+from .models import Book, Publisher, Review
 
 class PublisherForm(forms.ModelForm):
     class Meta:
@@ -23,3 +23,10 @@ class SearchForm(forms.Form):
         initial='title',
         label="Search in"
     )
+
+
+# (Bài tập Chương 6 - Bài 1, bước 5) Form chỉ dùng để tải ảnh bìa và nội dung mẫu cho sách
+class BookMediaForm(forms.ModelForm):
+    class Meta:
+        model = Book
+        fields = ["cover", "sample"]   # chỉ 2 trường vừa thêm ở model Book

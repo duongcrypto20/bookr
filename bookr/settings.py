@@ -95,6 +95,10 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# (BT Chương 6 - Bài 1, bước 1) Cấu hình thư mục lưu tập tin người dùng tải lên
+MEDIA_ROOT = BASE_DIR / "media"   # Thư mục thật trên ổ đĩa để lưu tập tin (ảnh bìa, PDF)
+MEDIA_URL = "/media/"             # Tiền tố URL để truy cập các tập tin đó trên trình duyệt
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 INSTALLED_APPS = [

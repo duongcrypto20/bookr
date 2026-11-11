@@ -47,6 +47,11 @@ class Book(models.Model):
     contributors = models.ManyToManyField(
         'Contributor',
         through="BookContributor")
+    # (Bài tập Chương 6 - Bài 1, bước 3) Ảnh bìa: lưu vào thư mục media/book_covers/,
+    # cho phép để trống (null=True, blank=True). ImageField cần cài thư viện Pillow.
+    cover = models.ImageField(null=True, blank=True, upload_to="book_covers/")
+    # Tập tin nội dung mẫu (PDF...): lưu vào media/book_samples/, cũng cho phép để trống
+    sample = models.FileField(null=True, blank=True, upload_to="book_samples/")
 
     def __str__(self):
         return "{} ({})".format(self.title, self.isbn)

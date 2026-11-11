@@ -1,0 +1,48 @@
+{# Trang hồ sơ người dùng (Ch.7 - Bài II) mở rộng ở Bài VI: thêm danh sách sách đã xem gần đây #}
+{% extends "base.html" %}
+
+{% block title %}Bookr{% endblock %}
+
+{% block content %}
+{# (Ch.7 - Bài VI, bước 8) CSS xếp 2 khung cạnh nhau bằng flexbox; khung có viền xanh, bo góc #}
+<style>
+  .flexrow { display: flex;
+             border: 2px black;
+  }
+  .flexrow > div { flex: 1; }
+  .infocell {
+    border: 2px solid green;
+    border-radius: 5px 25px;
+    background-color: white;
+    padding: 5px;
+    margin: 20px 5px 5px 5px;
+  }
+</style>
+
+<div class="flexrow">
+  {# Khung bên trái: thông tin hồ sơ (từ Bài II) #}
+  <div class="infocell">
+    <p>Profile</p>
+    <p>
+      Username: {{ request.user.username }} <br>
+      Name: {{ request.user.first_name }} {{ request.user.last_name }}<br>
+      Date Joined: {{ request.user.date_joined }} <br>
+      Email: {{ request.user.email }}<br>
+      Last Login: {{ request.user.last_login }}<br>
+    </p>
+  </div>
+
+  {# (Bước 9) Khung bên phải: các sách vừa xem, lấy từ session['viewed_books'] #}
+  <div class="infocell">
+    <p>Viewed Books</p>
+    <p>
+      {# Mỗi phần tử trong danh sách là [id sách, tên sách] #}
+      {% for book_id, book_title in request.session.viewed_books %}
+      <a href="/books/{{ book_id }}/">{{ book_title }}</a><br>
+      {% empty %}
+      No recently viewed books found.
+      {% endfor %}
+    </p>
+  </div>
+</div>
+{% endblock %}
